@@ -1,0 +1,14 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+
+<title>1:Introduction</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m58716</md:content-id>
+  <md:title>1:Introduction</md:title>
+  <md:abstract/>
+  <md:uuid>bd0e1342-75b4-41f6-8fc4-74795d582e75</md:uuid>
+</metadata>
+
+<content>
+  <section id="eip-641"><title>1.0 Introduction</title><para id="delete_me">Computer vision is a very important problem in modern society. It has applications in many disciplines, from analyzing targets found in satellite images, to inspecting circuit boards to determine their quality, to analyzing photos on Facebook in order to guess who the faces in them belong to.</para><para id="eip-928">We wanted to gain a better understanding of image recognition, but as there are already so many guides and solutions in existence, we decided we would learn about the subject by applying it to another real-world problem.</para><para id="eip-388">In modern robotics, it is very difficult to write a program that can autonomously seek out a target and find its own path to its goal. There exist many sensors that can give a robot information about the environment surrounding it, such as encoders, gyroscopes, accelerometers, and ultrasonic rangefinders. However, even with all these sensors, all that most robots can do is follow a pre-programmed path, and use their sensors to avoid obstacles.</para><para id="eip-398">To this end, our goal was to solve a simple problem in the domain of computer vision, the detection of balls of a certain color. Then, we wanted to implement our solution in hardware, and make a robot with a camera that could autonomously track a ball, turn towards it, and drive up to it.</para></section></content>
+
+</document>

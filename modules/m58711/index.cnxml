@@ -1,0 +1,95 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+
+<title>3:Hardware Implementation</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m58711</md:content-id>
+  <md:title>3:Hardware Implementation</md:title>
+  <md:abstract>Usage of the Hough Circle Transform on a robot to detect yellow balls.</md:abstract>
+  <md:uuid>ceb6dc57-d3c9-46f3-9a3e-ff5b3a1cb874</md:uuid>
+</metadata>
+
+<content>
+  <section id="eip-661"><title>3.0 Hardware Introduction</title><para id="eip-408">
+This project had a two part goal: 1. Understand the Hough Transform and be able to detect circles using from-scratch code and 2. Implement the Hough Transform on hardware to create a robot that can detect yellow balls. This section will explain that hardware implementation in detail.
+</para><para id="eip-711"><figure id="botlabel">
+  <title>The Robot</title>
+<media id="botlabel1" alt="The Robot">
+
+<image mime-type="image/png" src="../../media/botlabel2.png"/>
+</media>
+<caption>
+An image of our robot with important system parts labeled.
+</caption>
+</figure></para><para id="eip-515">The hardware that we used for this project was largely provided by the Rice Robotics Club which uses tools from Vex Robotics. The robot four-wheeled using Mechanum wheels which allow for strafing if they are rotated in the proper directions. To drive the wheels, the Vex Cortex onboard computer runs code in C to drive each of the four motors at the proper power levels. The cortex also receives information from a Gyroscope in order to determine what angle the robot is facing. Finally, a Raspberry Pi runs code in Python with a PiCamera to run the ball detection algorithm which transmits data to the Cortex using the UART protocol. Below we can see the block diagram for the robot's system.</para><para id="eip-646"><figure id="overallsystem">
+  <title>Overall Hardware System</title>
+<media id="system" alt="Overall Hardware System">
+
+<image mime-type="image/png" src="../../media/overallsystem.png"/>
+</media>
+  <caption>
+     The system in its entirety. The Raspberry Pi system and Vex Cortex system are explained in detail in further sections. 
+  </caption>
+</figure></para></section><section id="eip-876"><title>3.1 Raspberry Pi System</title><para id="eip-108">
+We will now dive into the inner workings of the Raspberry Pi ball detection algorithm. The overall objective of the Raspberry Pi is to use images taken from the PiCamera and determine an angle for the robot to turn to as well as a single bit determining whether or not a ball is seen.
+</para><para id="eip-507"><figure id="pisystem1">
+  <title>The Raspberry Pi System</title>
+<media id="pisystem" alt="Pi Detection System">
+
+<image mime-type="image/png" src="../../media/pisystem.png"/>
+</media>
+  <caption>
+     Image capture comes in through the PiCamera hardware. The output is always a 5 character string over UART to the Cortex. 
+  </caption>
+</figure></para><para id="eip-28">The first thing the pi does is capture an image using the PiCamera. This image capture can only be done as fast as the code can run. At 360x240 pixels, the Pi can capture images at roughly 5 frames per second. Increasing that resolution decreases the frames per second and also decreases the speed that it can detect the ball. Howevever, increasing the resolution also increases the size of the ball that can be detected. A greater resolution means that the Raspberry Pi algorithm can detect balls that are either smaller or further away. At the resolution we chose (360x240) the pi can reliably detect a ball that is 2 or 3 feet away.</para><para id="eip-500">Once the image is captured, we need to filter out for the color yellow. This is done quite simply in the HSV (hue/saturation/value) colorspace. In good lighting, the color yellow falls in the Hue values of ~30-60, the Saturation values of ~80-255, and the Value values of ~80-255. More precise values for yellow detection can be used for more accurate results, but they depend heavily on lighting conditions on the room. For this reason, the program needs to be re-calibrated every time it enters new lighting condition. In the future we could have an auto-calibration sequence for the robot to determine these values, or simply preset modes for different lighting methods.</para><para id="eip-851">After masking for the yellow balls, we need to filter out any noise so that the circle detector doesn't detect any false balls. We first erode, then dilate the image to get rid of most extraneous noise. This is followed by a simple Gaussian blur to help the circle detector even further. </para><para id="eip-942">Circle detection is done using OpenCV. We could have used the circle detector that we wrote ourselves, but it runs much slower than the one provided in OpenCV. The function </para><code id="eip-424" display="block">cv2.HoughCircles(dp,minDist,param1,param2,minRadius,maxRadius)</code><para id="eip-382">has 6 parameters that we can adjust. The dp argument corresponds to the resolution of the accumulator threshold as a simple inverse ratio between the image resolution and the accumulator resolution. The minDist argument is the minimum distance allowed between two detected circles. param1 is the threshold to be used for the Canny edge detector which is built into the function. param2 corresponds to the accumulator threshold. The smaller param2 is, the more false circles may be detected. Finally minRadius and maxRadius are the smallest and largest balls that are allowed to be detected.</para><para id="eip-883"><figure id="example">
+  <title>Yellow Ball Detection</title>
+<media id="images" alt="What the Pi sees">
+
+<image mime-type="image/png" src="../../media/example.png"/>
+</media>
+  <caption>
+     These are 5 images of what the Raspberry Pi can see. Each image follows a different step of the color masking and ball detection process.
+  </caption>
+</figure></para><para id="eip-986">Once circles are detected, the system must output an angle over UART. In this instance, there are two cases:</para><list id="eip-308" list-type="enumerated" number-style="arabic"><item>The first case is where no circles are detected. In this case, the system will output and angle of 0 and a 0 bit for circle detection. However, occasionally a circle will miss detection for one or two frames. For this reason, we have implemented a counter that will only say that no ball was detected if the ball isn't detected for at least 4 frames.</item>
+<item>The second case is where at least one ball is detected. In this case, the program chooses the largest detected yellow ball and calculates and angle to send over UART once per frame.</item></list><para id="eip-806">Once data is sent over UART, the next image is captured on the Raspberry Pi. At our chosen resolution, we can send data 5 times per second. It is then up to the Vex Cortex to drive the motors.</para></section><section id="eip-203"><title>3.2 Robot Behavior</title><para id="eip-994">Finally, we will take a look at the robot itself, and how it uses the UART input in order to track and approach the ball.</para><para id="eip-770">The robot's vision function is a state machine with 3 states, as described below. Note that State 2 is managed by a PID control structure, using the gyroscope's current value as the input, and a setpoint of the gyroscope's value plus the angle delivered from the Raspberry Pi.</para><list id="eip-199" list-type="labeled-item"><item><label>State 1</label>If the Raspberry Pi reports that there is no ball in sight, the robot will not move.</item>
+<item><label>State 2</label>If a ball is detected, but the robot is not within 2 degrees of facing it, the robot will rotate to face the ball.</item>
+<item><label>State 3</label>If the robot is facing the ball within tolerance, it will drive forward towards the ball.</item></list><code id="eip-76" display="block">void vision() {
+	gyroReset(gyro-&gt;g);
+	gyroPid-&gt;running = 1;
+	int targetAngle = gyro-&gt;value;		//UART angle goeth here.
+	int seesBall = 0;			//UART ball in sight
+	int turnPow = 20;
+	int drivePow = 30;
+	for(ever) {
+		if(joystickGetDigital(1, 8, JOY_UP)) operatorControl();
+		char* sInput = fgets(uartIn, 6, uart1);
+		if(sInput) {
+                        //Decode UART input
+			char* sAngle = strtok(sInput, " ");
+			char* sBalls = strtok(NULL, " ");
+			seesBall = atoi(sBalls);
+			if(seesBall)
+				targetAngle = gyro-&gt;value + atoi(sAngle);
+		}
+		gyroPid-&gt;setPoint = targetAngle;
+		turnPow = seesBall ? gyroPid-&gt;output : 0;
+		printf("Gyro: %d/%d, atSetpoint: %d, output: %d\n\r", gyro-&gt;value, gyroPid-&gt;setPoint, gyroPid-&gt;atSetpoint, gyroPid-&gt;output);
+		if(!gyroPid-&gt;atSetpoint) {
+			MOTDTFrontLeft-&gt;out = -turnPow;
+			MOTDTFrontRight-&gt;out = turnPow;
+			MOTDTBackLeft-&gt;out = -turnPow;
+			MOTDTBackRight-&gt;out = turnPow;
+		}
+		else if(seesBall){
+			MOTDTFrontLeft-&gt;out = drivePow;
+			MOTDTFrontRight-&gt;out = drivePow;
+			MOTDTBackLeft-&gt;out = drivePow;
+			MOTDTBackRight-&gt;out = drivePow;
+		}
+		if(!seesBall) {
+			targetAngle = gyro-&gt;value;
+		}
+		delay(20);
+	}
+}<caption>This code uses a custom library written by the Rice Robotics Club in order to handle output to the motors, and the PID control. The source for this library can be found in <emphasis>Section 4.2 Additional Resources</emphasis></caption></code></section></content>
+
+</document>

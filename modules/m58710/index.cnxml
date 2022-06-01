@@ -1,0 +1,27 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+
+<title>4:Conclusions and Future Steps</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m58710</md:content-id>
+  <md:title>4:Conclusions and Future Steps</md:title>
+  <md:abstract/>
+  <md:uuid>3a008d67-4927-4977-bb73-1beac0060e94</md:uuid>
+</metadata>
+
+<content>
+  <section id="eip-891"><title>4.0 Conclusions</title><para id="eip-947">As far as the Hough Transform goes, our findings were as follows:</para><list id="eip-489"><item>The success of the algorithm depends on edge magnitude threshold, Hough transform threshold,  and radius parameters.  and image noise. Changing thresholds results in tradeoffs between false positives and false negatives.</item>
+
+<item>For images with single balls, the algorithm can detect the ball with 95.6 % accuracy. Of the wrongly detected images, 66.7% had high amounts of motion blur.</item>
+
+<item>The algorithm can also detect balls partially cut out of the image as long as more than 60% of the ball is within the image.</item>
+
+<item>In images where multiple balls are close or overlapping, the algorithm may mistake the two balls as a single object or miss one of the balls.</item>
+</list><para id="eip-380">The video linked in the Additional Resources section also demonstrates our Hough transform implementation in action.</para></section><section id="eip-577"><title>4.1 Future Steps</title><para id="eip-740">The next primary addition to our robot is object permanence, giving it the capability to remember balls that have moved out of its field of view and rotate itself to find them again. Other future goals include recognizing when an obstacle is in front of the ball, fine-tuning the PID control in order to speed up the angling and approach to a ball, and being able to prioritize different balls based on properties like color.</para></section><section id="eip-12"><title>4.2 Additional Resources</title><para id="eip-17">A video of our robot in action can be found <link url="https://youtu.be/UoaUk93r6B4" window="new">here</link> on Youtube.</para><para id="eip-922">Our poster presentation can be downloaded from <link url="http://legacy.cnx.org/Members/ltspicegirls/module.2015-12-14.6440337696/unifiedfile.2015-12-14.9224492164/download" window="new">this link</link>.</para><para id="eip-156">Python code for the Hough transform can be found <link url="https://gist.github.com/unbalancedgiraffe/6b0ea0d6f861fd911ef3" window="new">here</link>.</para><para id="eip-232">The custom library used by the robot can be found <link url="https://github.com/RiceRobotics/RiceBot" window="new">here</link>.</para></section><section id="eip-851"><title>4.3 References</title><list id="eip-330"><item>M.K. Vairalkar and S.U. Nimbhorkar. Edge detection of images using Sobel operator.         
+International Journal of Emerging Technology and Advanced Engineering, 2(1):291–293, 
+2012.</item>
+
+<item>R.O. Duda and P.E. Hart. Use of the Hough transform to detect lines and curves in pictures.  
+Community Assoc. comput. Mach. 15 (1975), pp. 11-15.</item>
+</list></section></content>
+
+</document>

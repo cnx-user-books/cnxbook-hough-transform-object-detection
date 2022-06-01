@@ -1,0 +1,292 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+
+<title>2:Hough Transform</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m58714</md:content-id>
+  <md:title>2:Hough Transform</md:title>
+  <md:abstract/>
+  <md:uuid>684aa3af-c0a8-4a0c-a864-52a5eff2775c</md:uuid>
+</metadata>
+
+<content>
+  <para id="delete_me"><title>2. Software Implementation of the Hough Transform</title><!-- Insert module text here -->
+  </para><section id="eip-651"><title>2.1 Approach</title><para id="eip-177">We first detect edges using the Sobel operator [1], and then we apply the Hough circle transform to detect circles in the image [2.] The following steps we took will be covered in more detail under section 2.2.
+</para></section><list id="eip-360" list-type="enumerated" number-style="arabic"><item>Blurring image with the Gaussian kernel</item>
+<item>Using the Sobel operator to find edge points</item>
+<item>Applying Hough circle transform</item>
+<item>Processing the results of the transform</item></list><para id="eip-676"><media id="the_process" alt="FIGHT ME.">
+	   
+  <image mime-type="image/jpeg" src="../../media/Capture11.jpg"/>
+		 
+</media></para><para id="eip-754">Fig 2.1 From left to right: Original image, blurred image, image Edges, Hough transform results, processing the results of the Hough transform.</para><section id="eip-810"><title>2.2 Software Implementation</title><para id="eip-472">Software implementation was done with Python. The following Python libraries were used.</para></section><list id="eip-365"><item>Numpy version 1.10.1</item>
+<item>Scipy version 0.16.0</item>
+<item>OpenCV version 3.0.0</item></list><section id="eip-768"><title>2.2.1 Blurring the image with the Gaussian kernel</title><para id="eip-567">Blurring the image removes noise and filters out background details. To do this, we blur the image with a Gaussian kernel.
+</para><para id="eip-888"><media id="gaussian" alt="Gaussian kernel.">
+	   
+  <image mime-type="image/jpeg" src="../../media/Capture.JPG"/>
+		 
+</media></para><para id="eip-846">Fig 2.2 5x5 Gaussian kernel with a standard deviation of 1</para></section><code id="eip-675" display="block"><title>Code</title>def blur(img, blursize):
+    """
+    :param img: image to be blurred
+    :param blursize: size of gaussian kernel to blur with
+    :return: blurred image
+    """
+    # =============================
+    # Generate Gaussian kernel
+    # =============================
+    gauss = cv2.getGaussianKernel(blursize, blursize/3)
+    gauss = np.outer(gauss, gauss)
+    # =============================
+    # Filter with Gaussian kernel
+    # =============================
+    img = cv2.filter2D(img, -1, gauss)
+    return img
+</code><section id="eip-38"><title>2.2.2 Using the Sobel operator to find edge points</title><para id="eip-708">Edges occur at large changes in pixel value, so by finding local maximums in the image gradient’s magnitude, we can detect edge points. This concept is illustrated in 1 dimension (1D) in Fig 2.3.</para><para id="eip-143"><title/><media id="edge" alt="edge.">
+	   
+  <image mime-type="image/jpeg" src="../../media/Capture2.JPG"/>
+		 
+</media></para><para id="eip-386">Fig 2.3 Edges occur at large changes in pixel value, or, local maximums in the derivative.</para><para id="eip-766">Convolving an image with the Sobel operator gives us the approximate partial derivatives in the x and y directions. Let us define The Sobel operator as Sx for the x direction and Sy for the y direction,  let our define our image as A, and let us define Bx and By as the partial x and partial y, respectively, derivative approximations of A.</para></section><section id="eip-942"><title/><media id="sobel" alt="sobel operators">
+	   
+  <image mime-type="image/jpeg" src="../../media/Capture3.JPG"/>
+		 
+</media><para id="eip-353">Fig 2.4 Sobel operators for approximating partial x and partial y derivatives</para><para id="eip-453"><media id="gradient" alt="gradient.">
+	   
+  <image mime-type="image/jpeg" src="../../media/Capture4.jpg"/>
+		 
+</media></para><para id="eip-934">We can find the magnitude of gradient with equation 2.2, where the square and square root are element-wise operations.</para><para id="eip-268"><media id="Magnitude" alt="magnitude">
+	   
+  <image mime-type="image/gif" src="../../media/Capture5_2.gif"/>
+		 
+</media>
+</para><para id="eip-854">Now let E be a boolean matrix of the same dimensions as the image where if a pixel is an edge, then the boolean value for the pixel is True. We calculate this matrix by determining a threshold tmag and declaring every pixel whose gradient magnitude is at least tmag an edge pixel
+</para><para id="eip-565"><media id="edges" alt="Thresholded edges.">
+	   
+  <image mime-type="image/gif" src="../../media/Capture6_2.gif"/>
+		 
+</media>
+</para><para id="eip-924">In our actual approach, we split the image into red, blue, and green channels. We perform edge detection on all 3 and recombine them with equation 2.4. This method allows us to find cleaner edges.
+</para><para id="eip-592"><media id="channels" alt="channels.">
+	   
+  <image mime-type="image/gif" src="../../media/Capture7.gif"/>
+		 
+</media></para><para id="eip-175">We can find the gradient of B with equation 2.5. Though it doesn’t factor into the method of edge detection used here, finding the gradient at edges is important for reducing computational complexity for the Hough transform.</para><para id="eip-807"><media id="angle" alt="angle.">
+	   
+  <image mime-type="image/gif" src="../../media/Capture9.gif"/>
+		 
+</media></para></section><code id="eip-681" display="block"><title>Code</title>def detect_edge(img, thresh, blursize):
+    """
+    Detects edges in an image
+    :param img: image to detect edges in
+    :param thresh: minimum magnitude of gradient before it's considered an edge
+    :param blursize: size of Gaussian blur filter
+    :return: boolean matrix of edges in image
+    """
+    # =============================
+    # "Generate Sobel kernel"
+    # =============================
+
+    img = blur(img, blursize)
+    sobelx = np.array([[-1, 0, 1],
+              [-2, 0, 2],
+              [-1, 0, 1]])
+
+    sobely = np.array([[-1, -2, -1],
+              [0, 0, 0],
+              [1, 2, 1]])
+
+    # find partial derivatives of image by convolving with Sobel kernels
+    gradImgx = np.copy(img)
+    gradImgy = np.copy(img)
+    gradImgy = signal.convolve2d(gradImgy, sobely, mode = "same")/4.0
+    gradImgx = signal.convolve2d(gradImgx, sobelx, mode = "same")/4.0
+
+    # =============================
+    # "Calculate gradient angle and magnitude at each pixel"
+    # =============================
+    angleGrad = np.arctan2(gradImgy, gradImgx)
+    magGrad = np.sqrt(np.square(gradImgy) + np.square(gradImgx))
+
+    isEdge = np.greater_equal(magGrad, thresh)
+    return isEdge, angleGrad</code><section id="eip-307"><title>2.2.3 Applying the Hough circle transform</title><para id="eip-1">A circle can be represented as a center and a radius, and the Hough circle transform transforms a image from (x, y) points to (radius, center) as shown in equation 2.6 and 2.7 and figure (Fig #).</para><para id="eip-239"><media id="hough" alt="A dog sitting on a couch.">
+	   
+  <image mime-type="image/jpeg" src="../../media/unifiedfile.2015-12-15.2396793541"/>
+		 
+</media></para><para id="eip-705">Fig 2.5 Visual of the Hough transform</para><para id="eip-757"><media id="hough_equation" alt="A dog sitting on a couch.">
+	   
+  <image mime-type="image/gif" src="../../media/Capture10.gif"/>
+		 
+</media></para><para id="eip-451">Since the center and radius are both unknowns, the Hough transform tests r = from a minimum radius radMin to maximum radius radMax.</para><list id="eip-896" list-type="enumerated" number-style="arabic"><item>In an image with imgHeight rows and imgWidth columns, let V be an accumulator matrix of size (radMax, imgHeight, imgWidth).</item>
+<item>For each edge point (x, y) and each possible radius r, we use equation 2.6 to calculate the center.</item>
+<item>Give the resulting V(r, a, b) a vote.</item>
+<item>find the local maximums in V to determine circle locations.</item></list><code id="eip-581" display="block">def hough_circle(colorImg, img, isEdge, angleGrad, radMin, radMax, distMin, votesMin):
+    """
+    Uses the Hough circle transform to detect circles in image
+
+    :param img: Image to be operated on. size rows x cols. cv2 image format
+    :param isEdge: rows x col size boolean matrix. True if pixel is edge pixel.
+    :param angleGrad: rows x col size float matrix. gradient direction at each pixel.
+    :param radMin: int, minimum radius of circles detected
+    :param radMax: int, maximum radius of circles detected
+    :param distMin: int, minimum distance between circles detected
+    :param votesMin: int, minimum threshold for accumulator value. The higher this value is,
+                    the less false circles detected
+
+    :return: numpy array of circles detected. Stored as a = [[radii], [rows], [cols]]
+            where
+            a[0][i] is the radius of the ith circle
+            a[1][i] is the row where the center of the ith circle is located
+            a[2][i] is the col where the center of the ith circle is located
+    """
+    rows, cols = img.shape
+    # Initialize accumulator matrix
+    param_votes = np.zeros((radMax, rows, cols), dtype = int)
+    # Initialize accumulator matrix of local maximums
+    param_maxes = np.zeros((radMax, rows, cols), dtype = int)
+
+    # Perform Hough transform on each edge point with radii ranging from radMin to radMax
+    for r in range(0, rows):
+        for c in range(0, cols):
+            # Get gradient angle at pixel (r,c)
+            # (r, c) is the proposed center for the circle
+            theta = angleGrad[r][c]
+            if isEdge[r][c]:
+                for rad in range(radMin, radMax):
+                    # For each proposed, center,
+                    # Test each possible radius and give a vote to the resulting (rad, center) coordinates
+                    xstar = round(c - rad * math.cos(theta))
+                    ystar = round(r - rad * math.sin(theta))
+                    if xstar &gt;=0 and xstar &lt; cols and ystar &gt;=0 and ystar &lt; rows:
+                        param_votes[rad][ystar][xstar] += 1
+
+                    # Add pi to the gradient angle so the angle also points in the other direction because
+                    # who knows is the gradient is pointing towards or away from the center of the circle.
+                    theta = theta + math.pi
+                    xstar = round(c - rad * math.cos(theta))
+                    ystar = round(r - rad * math.sin(theta))
+
+                    # Add a vote to (rad, center) if the center is within the bounds of the image
+                    if xstar &gt;=0 and xstar &lt; cols and ystar &gt;=0 and ystar &lt; rows:
+                        param_votes[rad][ystar][xstar] += 1
+
+    # Find local maximums in the accumulator matrix.
+    param_votes[param_votes &lt; votesMin] = 0
+    param_max = filter.maximum_filter(param_votes, size = (distMin, distMin, distMin))
+    param_max = np.logical_and(param_votes, param_max)
+
+    # Find indices of maximums
+    circle_indices = np.where(param_max)
+
+    # Will most likely find too many circles, so use helper function to average clusters of circles
+    # Also removes false positives
+
+    circle_indices = reduce_circles(circle_indices, distMin, param_votes)
+
+    total_circles = len(circle_indices[0])
+
+    # draw detected circles onto img
+    for i in range(0, total_circles):
+        rad = circle_indices[0][i]
+        r = circle_indices[1][i]
+        c = circle_indices[2][i]
+        cv2.circle(colorImg, (c, r), rad, (0,255,0), thickness = 3)
+        cv2.circle(colorImg, (c, r), 1, (0, 255, 0), thickness = 2)
+
+    return colorImg, circle_indices
+</code></section><para id="eip-129"><title>2.2.4 Processing the results of the transform</title>Often, multiple (r, a, b) within a cluster will be local maximums, and often, we'll also detect false positives. We do some processing to average clusters and remove false positives.
+</para><list id="eip-29" list-type="enumerated" number-style="arabic"><item>Find clusters of circles, where a cluster is defined as circles with centers a within distance of l away from each other.</item>
+<item>Average the center and radius of circles in a cluster to create a new circle. Each circle in a cluster contributes its own center and radius weighted by the number of votes it received squared.</item>
+<item>Remove any clusters with less than a threshold number of circles</item></list><code id="eip-579" display="block"><title>Code</title>def reduce_circles(circle_indices, distMin, param_votes):
+    """
+    Helper function for hough_circle
+    Averages clusters of circles
+
+    :param circle_indices: numpy array of circles detected. Stored as a = [[radii], [rows], [cols]]
+            where
+            a[0][i] is the radius of the ith circle
+            a[1][i] is the row where the center of the ith circle is located
+            a[2][i] is the col where the center of the ith circle is located
+    :param distMin: int, minimum distance between circles detected. (The function averages circles clustered within
+                    a distMin x distMin square)
+    :param votesMin: int, minimum threshold for accumulator value. The higher this value is,
+                    the less false circles detected
+    :return: numpy array of circles
+    """
+
+    rad_indices = circle_indices[0]
+    r_indices = circle_indices[1]
+    c_indices = circle_indices[2]
+    print rad_indices
+    print r_indices
+    print c_indices
+
+    total_circles = len(rad_indices)
+    print "total circles ", total_circles
+    new_circle_indices = [[],[],[]]
+
+
+    radtemp = 0                 # accumulator value for radii
+    rtemp = 0                   # accumulator value for rows
+    ctemp = 0                   # accumulator value for columns
+    weightcount = 0             # accumulator value for weight of each circle.
+                                # A proposed circle with n votes contributes n^2 weight
+    count = 0                   # total number of circles detected in a cluster.
+
+    minThresh = total_circles / 5   # Each cluster has a count that records number of circles in that cluster.
+                                    # If count is below minThresh, the cluster is disregarded as a false positive.
+
+    # Remove an (radius, center) once it's been determined part of a cluster. Iterate until no more proposed circles to
+    # iterate through. Iterate backwards so deleting things doesn't mess up indexing.
+    while np.size(rad_indices)!= 0:
+        # get center
+        r0 = r_indices[0]
+        c0 = c_indices[0]
+        for i in reversed(range(0, total_circles)):
+            # If iterate through all other proposed circles, and find ones with center within a
+            # distMin x distMin square.
+            if abs(r0 - r_indices[i]) &lt; distMin and abs(c0 - c_indices[i] &lt; distMin):
+                # (radius, center) values of proposed circle wwe've iterated to
+                rad = rad_indices[i]
+                r = r_indices[i]
+                c = c_indices[i]
+
+                # increase accumulator values, weighted by weight
+                weight = param_votes[rad][r][c]*param_votes[rad][r][c]
+                radtemp += rad * weight
+                rtemp += r * weight
+                ctemp += c * weight
+
+                # delete proposed circle from rad_indices
+                rad_indices = np.delete(rad_indices, i)
+                r_indices = np.delete(r_indices, i)
+                c_indices = np.delete(c_indices, i)
+                weightcount += weight
+                count += 1
+        total_circles = len(rad_indices)
+
+        # if more circles in cluster than minThresh, average the radii and center values to combine the cluster into
+        # one circle
+        if count &gt;= minThresh:
+            new_circle_indices[0].append(radtemp / weightcount)
+            new_circle_indices[1].append(rtemp / weightcount)
+            new_circle_indices[2].append(ctemp /weightcount)
+
+        # Optional code. If you know you won't have circles within circles, uncomment this code.
+        # This removes circles with centers inside of other circles.
+
+        # for i in reversed(range(0, total_circles)):
+        #     if abs(rtemp / weightcount - r_indices[i]) &lt; radtemp / weightcount and abs(ctemp /weightcount - c_indices[i]) &lt; radtemp / weightcount:
+        #         rad_indices = np.delete(rad_indices, i)
+        #         r_indices = np.delete(r_indices, i)
+        #         c_indices = np.delete(c_indices, i)
+        #     total_circles = len(rad_indices)
+
+        # reset accumulators to 0 for the next cluster
+        radtemp = 0
+        rtemp = 0
+        ctemp = 0
+        count = 0
+        weightcount = 0
+
+    return np.array(new_circle_indices)</code></content>
+
+</document>

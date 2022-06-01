@@ -1,0 +1,44 @@
+<col:collection xmlns="http://cnx.rice.edu/collxml" xmlns:col="http://cnx.rice.edu/collxml" xml:lang="en">
+  <metadata xmlns:md="http://cnx.rice.edu/mdml" mdml-version="0.5">
+  <md:content-id>col11937</md:content-id>
+  <md:title>Hough Transform Object Detection</md:title>
+  
+  
+  <md:license url="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution License 4.0</md:license>
+  <md:language>en</md:language>
+
+  
+
+  
+  
+  
+  
+  
+
+  <md:uuid>1078382e-ad7a-42c3-bedf-966166d8c826</md:uuid>
+<md:slug>hough-transform-object-detection</md:slug>
+</metadata>
+
+  <col:content>
+    
+      <col:module document="m58716"/>
+        
+      
+    
+    
+      <col:module document="m58714"/>
+        
+      
+    
+    
+      <col:module document="m58711"/>
+        
+      
+    
+    
+      <col:module document="m58710"/>
+        
+      
+    
+  </col:content>
+</col:collection>
